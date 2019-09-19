@@ -29,6 +29,8 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 
 	@Override
 	public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
+		log.info("Looking up children...");
+
 		ProjectBuildingRequest pbr = session.getProjectBuildingRequest();
 
 		List<MavenProject> projects = session.getProjects();

@@ -12,7 +12,7 @@
 
 	<groupId>com.github.jezza</groupId>
 	<artifactId>simplified-reactor-plugin</artifactId>
-	<version>0.1</version>
+	<version>0.2</version>
 
 	<scm>
 		<url>https://github.com/Jezza/simplified-reactor</url>
@@ -84,8 +84,18 @@
 			<version>3.6.0</version>
 			<scope>provided</scope>
 		</dependency>
-	</dependencies>
 
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-core</artifactId>
+			<version>3.6.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.plexus</groupId>
+			<artifactId>plexus-component-annotations</artifactId>
+			<version>1.7.1</version>
+		</dependency>
+	</dependencies>
 
 	<build>
 		<plugins>
@@ -116,6 +126,19 @@
 			<!--					</execution>-->
 			<!--				</executions>-->
 			<!--			</plugin>-->
+
+			<plugin>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-component-metadata</artifactId>
+				<version>1.7.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate-metadata</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

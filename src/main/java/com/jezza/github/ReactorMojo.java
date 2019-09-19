@@ -8,6 +8,5 @@ public class ReactorMojo extends AbstractMojo {
 
 	@Override
 	public void execute() {
-		// For some weird reason, we need to declare a
 	}
 }
