@@ -27,7 +27,7 @@ Simply add the necessary junk, and it'll all "just work":
         <extension>
             <groupId>com.github.jezza</groupId>
             <artifactId>simplified-reactor-plugin</artifactId>
-            <version>0.1</version>
+            <version>0.2</version>
         </extension>
     </extensions>
 </build>
