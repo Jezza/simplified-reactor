@@ -33,7 +33,7 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 
 	@Override
 	public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
-		log.info("Looking up children...");
+		log.info("Looking up children... ");
 
 		ProjectBuildingRequest pbr = session.getProjectBuildingRequest();
 
@@ -49,7 +49,9 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 			return;
 		}
 
-		File base = project.getFile().getParentFile();
+		Path base = project.getFile().getParentFile().toPath();
+
+		List<MavenProject> newProjects = new ArrayList<>(projects);
 
 		for (String child : children) {
 			child = child.trim();
@@ -57,20 +59,23 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 				continue;
 			}
 
-			File target = findTarget(base, child);
+			Path target = findTarget(base, child);
 			if (target == null) {
 				continue;
 			}
 
 			ProjectBuildingResult result;
 			try {
-				result = builder.build(target, pbr);
+				result = builder.build(target.toFile(), pbr);
+				log.info("Adding " + target);
 			} catch (ProjectBuildingException e) {
 				throw new MavenExecutionException("Unable to read file: " + target, e);
 			}
 
-			projects.add(result.getProject());
+			newProjects.add(result.getProject());
 		}
+
+		session.setProjects(newProjects);
 	}
 
 	private String[] determineChildren(MavenProject project) {
@@ -111,36 +116,23 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 		return paths.toArray(EMPTY);
 	}
 
-	private File findTarget(File base, String path) {
+	private Path findTarget(Path base, String path) {
 		if (path == null || path.isEmpty()) {
 			return null;
 		}
 
-		Path resolved = base.toPath()
-				.resolve(path)
+		Path target = base.resolve(path)
 				.normalize();
 
-		if (testPath(resolved)) {
-			return resolved.toFile();
+		if (Files.isDirectory(target)) {
+			target = target.resolve("pom.xml");
 		}
 
-		resolved = resolved.getParent();
-		if (testPath(resolved)) {
-			return resolved.toFile();
+		if (Files.exists(target) && Files.isRegularFile(target)) {
+			return target;
 		}
 
-		log.warn("Unable to locate pom.xml at " + path);
+		log.warn("Unable to locate pom.xml with " + path);
 		return null;
-	}
-
-	private boolean testPath(Path path) {
-		if (Files.isDirectory(path)) {
-			path = path.resolve("pom.xml");
-		}
-		if (!Files.exists(path)) {
-			log.warn("File/Directory does not exist: " + path);
-			return false;
-		}
-		return true;
 	}
 }
