@@ -1,6 +1,5 @@
 package com.jezza.github;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "reactor")
 public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 	private static final String CHILDREN_PROP = "reactor.children";
+	private static final String PLUGIN_COORDINATES = "com.github.jezza:simplified-reactor-plugin";
 
 	@Requirement
 	Logger log;
@@ -35,22 +35,17 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 	public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
 		log.info("Looking up children... ");
 
-		ProjectBuildingRequest pbr = session.getProjectBuildingRequest();
-
-		List<MavenProject> projects = session.getProjects();
-		if (projects.size() != 1) {
-			log.warn("Don't know how to handle multiple (" + projects.size() + ") projects...");
-			return;
-		}
 		MavenProject project = session.getCurrentProject();
 
 		String[] children = determineChildren(project);
 		if (children == null || children.length == 0) {
+			log.info("Unable to determine children or none were declared.");
 			return;
 		}
 
-		Path base = project.getFile().getParentFile().toPath();
+		List<MavenProject> projects = session.getProjects();
 
+		Path base = project.getFile().getParentFile().toPath();
 		List<MavenProject> newProjects = new ArrayList<>(projects);
 
 		for (String child : children) {
@@ -64,15 +59,23 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 				continue;
 			}
 
+			ProjectBuildingRequest pbr = session.getProjectBuildingRequest();
+
 			ProjectBuildingResult result;
 			try {
 				result = builder.build(target.toFile(), pbr);
-				log.info("Adding " + target);
+				log.info(target + " contains a valid Maven Project.");
 			} catch (ProjectBuildingException e) {
 				throw new MavenExecutionException("Unable to read file: " + target, e);
 			}
 
-			newProjects.add(result.getProject());
+			MavenProject built = result.getProject();
+			if (!newProjects.contains(built)) {
+				log.info("Added " + target + " to build.");
+				newProjects.add(built);
+			} else {
+				log.info(target + " was already added in build.");
+			}
 		}
 
 		session.setProjects(newProjects);
@@ -80,7 +83,7 @@ public class ReactorLifecycle extends AbstractMavenLifecycleParticipant {
 
 	private String[] determineChildren(MavenProject project) {
 		Build build = project.getBuild();
-		Plugin plugin = build.getPluginsAsMap().get("com.github.jezza:simplified-reactor-plugin");
+		Plugin plugin = build.getPluginsAsMap().get(PLUGIN_COORDINATES);
 
 		Object configuration = plugin.getConfiguration();
 		if (configuration instanceof Xpp3Dom) {
